@@ -1,0 +1,24 @@
+﻿<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>OWASP Notes</title>
+</head>
+<body>
+<p>
+<a href="{% url 'public_feed' %}">Public notes</a> |
+{% if member %}
+<a href="{% url 'my_notes' %}">My notes</a> |
+<a href="{% url 'create_note' %}">New note</a> |
+<a href="{% url 'search_notes' %}">Search</a> |
+{% if member.is_moderator %}<a href="{% url 'moderation' %}">Moderation</a> | {% endif %}
+<a href="{% url 'logout' %}">Log out ({{ member.username }})</a>
+{% else %}
+<a href="{% url 'login' %}">Log in</a> |
+<a href="{% url 'register' %}">Register</a>
+{% endif %}
+</p>
+<hr>
+{% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,9 @@
+[project]
+name = "owasp-notes"
+version = "0.1.0"
+description = "Cyber Security Base - Securing Software course project demonstrating OWASP Top 10 (2021) flaws and fixes"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=5.2,<6.0",
+]

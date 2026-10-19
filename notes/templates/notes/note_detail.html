@@ -1,0 +1,7 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>{{ note.title }}</h1>
+<p>by {{ note.owner.username }} — {% if note.is_public %}public{% else %}private{% endif %}</p>
+<p>{{ note.body|linebreaksbr }}</p>
+<p><a href="{% url 'edit_note' note.id %}">Edit</a></p>
+{% endblock %}

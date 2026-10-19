@@ -1,0 +1,10 @@
+﻿.venv/
+__pycache__/
+*.pyc
+db.sqlite3
+security.log
+.python-version
+
+REPORT.txt
+REPORT.md
+.omc/

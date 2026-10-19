@@ -1,0 +1,19 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>Search notes</h1>
+<form method="get">
+<p>Title contains: <input name="q" value="{{ term }}"><button type="submit">Search</button></p>
+</form>
+{% if results %}
+<ul>
+{% for r in results %}
+<li>
+<a href="{% url 'note_detail' r.id %}">{{ r.title }}</a>
+<br>{{ r.body }}
+</li>
+{% endfor %}
+</ul>
+{% elif term %}
+<p>No results.</p>
+{% endif %}
+{% endblock %}

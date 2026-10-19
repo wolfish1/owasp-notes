@@ -1,0 +1,16 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>My notes</h1>
+{% if notes %}
+<ul>
+{% for n in notes %}
+<li>
+<a href="{% url 'note_detail' n.id %}">{{ n.title }}</a>
+{% if n.is_public %}(public){% else %}(private){% endif %}
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>You have no notes. <a href="{% url 'create_note' %}">Write one</a>.</p>
+{% endif %}
+{% endblock %}

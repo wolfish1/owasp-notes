@@ -1,0 +1,12 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>{% if note %}Edit note{% else %}New note{% endif %}</h1>
+<form method="post">
+{% csrf_token %}
+<p>Title: <input name="title" value="{{ note.title|default:'' }}"></p>
+<p>Body:<br>
+<textarea name="body" rows="8" cols="50">{{ note.body|default:'' }}</textarea></p>
+<p><label><input type="checkbox" name="is_public" {% if note.is_public %}checked{% endif %}> Public</label></p>
+<button type="submit">Save</button>
+</form>
+{% endblock %}

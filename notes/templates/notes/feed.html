@@ -1,0 +1,16 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>Public notes</h1>
+{% if notes %}
+<ul>
+{% for n in notes %}
+<li>
+<b>{{ n.title }}</b> by {{ n.owner.username }}
+<br>{{ n.body|linebreaksbr }}
+</li>
+{% endfor %}
+</ul>
+{% else %}
+<p>No public notes yet.</p>
+{% endif %}
+{% endblock %}

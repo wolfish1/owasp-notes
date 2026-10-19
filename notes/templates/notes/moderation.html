@@ -1,0 +1,16 @@
+﻿{% extends "notes/base.html" %}
+{% block content %}
+<h1>Moderation</h1>
+<h2>Members</h2>
+<ul>
+{% for m in members %}
+<li>{{ m.username }}{% if m.is_moderator %} (moderator){% endif %}</li>
+{% endfor %}
+</ul>
+<h2>All notes</h2>
+<ul>
+{% for n in notes %}
+<li><a href="{% url 'note_detail' n.id %}">{{ n.title }}</a> by {{ n.owner.username }}</li>
+{% endfor %}
+</ul>
+{% endblock %}
