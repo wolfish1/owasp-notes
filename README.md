@@ -20,9 +20,10 @@ out or remove the flawed lines where they would conflict). Screenshots live in
 
 ## Install and run
 
-Requires [uv](https://docs.astral.sh/uv/) and Python 3.10+.
+Requires Git, uv and Python 3.10+.
 
 ```bash
+git clone https://github.com/wolfish1/owasp-notes.git
 cd owasp-notes
 uv sync
 uv run python manage.py migrate
