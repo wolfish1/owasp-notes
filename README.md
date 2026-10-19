@@ -54,7 +54,7 @@ Use two browsers (or one normal + one private window) to switch between the user
 
 ### FLAW 1 – Broken Access Control (IDOR)
 
-**Code:** [`notes/views.py#L148`](notes/views.py#L148) `note_detail`, [`notes/views.py#L164`](notes/views.py#L164) `edit_note`  
+**Code:** `notes/views.py` → `note_detail`, `edit_note`  
 **Idea:** notes are loaded only by URL id; ownership is never checked.
 
 1. Log in as **bob** / `1`.
@@ -77,7 +77,7 @@ Use two browsers (or one normal + one private window) to switch between the user
 
 ### FLAW 2 – Cryptographic Failures (plaintext passwords)
 
-**Code:** [`notes/models.py#L8`](notes/models.py#L8) `password` field, [`notes/models.py#L16`](notes/models.py#L16) `set_password` / `verify_password`  
+**Code:** `notes/models.py` → `Member.set_password` / `verify_password`  
 **Idea:** the password column stores the raw string.
 
 1. Use the built-in alice/bob accounts (or register a new user).
@@ -103,7 +103,7 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 ### FLAW 3 – Injection (SQL)
 
-**Code:** [`notes/views.py#L189`](notes/views.py#L189) `search_notes`  
+**Code:** `notes/views.py` → `search_notes`  
 **Idea:** the search term is concatenated into a raw SQL string.
 
 1. Log in as **bob**. Open **Search**.
@@ -127,7 +127,7 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 ### FLAW 4 – Identification and Authentication Failures
 
-**Code:** [`notes/views.py#L53`](notes/views.py#L53) `register`, [`notes/views.py#L83`](notes/views.py#L83) `login_view`, [`config/settings.py#L128`](config/settings.py#L128) session cookie  
+**Code:** `notes/views.py` (`register`, `login_view`) and `config/settings.py` (session cookie)  
 **Idea:** weak passwords allowed, unlimited login tries, weak cookie flags.
 
 **A. Weak password on register**
@@ -174,7 +174,7 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 ### FLAW 5 – Security Logging and Monitoring Failures
 
-**Code:** no `LOGGING` in [`config/settings.py#L142`](config/settings.py#L142); silent paths in [`login_view` (views.py#L102)](notes/views.py#L102) and [`moderation` (views.py#L220)](notes/views.py#L220)  
+**Code:** no `LOGGING` in `config/settings.py`; silent paths in `login_view`, `moderation`, and the FLAW 1 fixes  
 **Idea:** failed logins and denied access leave no audit trail.
 
 1. Fail a few logins (wrong password) and/or open `/moderation/` as **bob** (non-moderator, 403).
