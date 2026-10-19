@@ -198,10 +198,3 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 4. Restart `uv run python manage.py runserver` (settings changes always need a restart).
 5. For FLAW 2, set passwords again after enabling hashing so old plaintext rows are updated.
 6. When done documenting, restore the commented-out style so the public repo stays “one version with flaws + fixes commented”, as the course asks.
-
-
-## Report
-
-The written course report is kept locally as `REPORT.txt` (listed in `.gitignore`, not pushed to GitHub). Replace the GitHub placeholder link before submitting.
-
-
