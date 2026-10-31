@@ -152,8 +152,8 @@ def note_detail(request, note_id):
     # FIX (commented out):
     # note = get_object_or_404(Note, pk=note_id)
     # if not note.is_public and note.owner != request.member:
-    #     security_log.warning("Access denied: member=%s tried to read note=%s",
-    #                          request.member.username, note_id)   # FLAW 5 fix
+    #     security_log.warning("Access denied: member=%s tried to read note=%s from ip=%s",
+    #                          request.member.username, note_id, client_ip(request))   # FLAW 5 fix
     #     return HttpResponseForbidden("You do not have access to this note.")
     return render(request, "notes/note_detail.html",
                   {"note": note, "member": request.member})
@@ -168,8 +168,8 @@ def edit_note(request, note_id):
     # FIX (commented out):
     # note = get_object_or_404(Note, pk=note_id)
     # if note.owner != request.member:
-    #     security_log.warning("Access denied: member=%s tried to edit note=%s",
-    #                          request.member.username, note_id)   # FLAW 5 fix
+    #     security_log.warning("Access denied: member=%s tried to edit note=%s from ip=%s",
+    #                          request.member.username, note_id, client_ip(request))   # FLAW 5 fix
     #     return HttpResponseForbidden("You can only edit your own notes.")
     if request.method == "POST":
         note.title = request.POST.get("title", note.title).strip()

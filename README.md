@@ -32,17 +32,9 @@ uv run python manage.py runserver
 
 Open http://127.0.0.1:8000/
 
-Optional Django admin: `uv run python manage.py createsuperuser`, then visit `/admin/`.
-
-`alice` is already a moderator. To make another member a moderator:
-
-```bash
-uv run python manage.py shell -c "from notes.models import Member; Member.objects.filter(username='alice').update(is_moderator=True)"
-```
-
 ## How to reproduce each flaw
 
-`migrate` automatically creates demo data (see `notes/migrations/0002_demo_users.py`):
+`migrate` automatically creates demo data:
 
 | Username | Password | Role |
 |----------|----------|------|
@@ -51,18 +43,13 @@ uv run python manage.py shell -c "from notes.models import Member; Member.object
 
 Notes: `Alice private secret` (id 1, private), `Alice public hello` (id 2, public), `Bob private plan` (id 3, private).
 
-Use two browsers (or one normal + one private window) to switch between the users.
-
 ### FLAW 1 – Broken Access Control (IDOR)
-
-**Code:** `notes/views.py` → `note_detail`, `edit_note`  
-**Idea:** notes are loaded only by URL id; ownership is never checked.
 
 1. Log in as **bob** / `1`.
 2. In the address bar open `/note/1/` (alice’s private note). You should see alice’s private body.
 3. Open `/note/1/edit/`. Bob can change the title/body and Save.
 
-**After the fix:** uncomment the ownership checks under `# FIX` in those two views (and comment out the bare `get_object_or_404` path if needed). Restart the server. Bob opening the same URLs should get **403 Forbidden**.
+**After the fix:** As bob, `/note/1/` shows "You do not have access to this note." and `/note/1/edit/` shows "You can only edit your own notes.".
 
 **Before – bob reads alice’s private note**
 
@@ -72,25 +59,25 @@ Use two browsers (or one normal + one private window) to switch between the user
 
 ![flaw-1-before-2](screenshots/flaw-1-before-2.png)
 
-**After – access denied (403)**
+**After – bob is denied reading alice’s note**
 
 ![flaw-1-after-1](screenshots/flaw-1-after-1.png)
 
+**After – bob is denied editing alice’s note**
+
+![flaw-1-after-2](screenshots/flaw-1-after-2.png)
+
 ### FLAW 2 – Cryptographic Failures (plaintext passwords)
 
-**Code:** `notes/models.py` → `Member.set_password` / `verify_password`  
-**Idea:** the password column stores the raw string.
+1. Open the database shell with `uv run python manage.py dbshell` and run at the `sqlite>` prompt:
 
-1. Use the built-in alice/bob accounts (or register a new user).
-2. Stop the server if you like, then open `db.sqlite3` with a SQLite browser, or run:
-
-```bash
-uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execute('SELECT id,username,password FROM notes_member').fetchall())"
+```sql
+SELECT id, username, password FROM notes_member;
 ```
 
-3. The `password` column shows values like `1`, not `pbkdf2_sha256$...`.
+2. The `password` column shows `'1'` in plaintext.
 
-**After the fix:** enable the commented `make_password` / `check_password` methods, re-register a user (or call `set_password` again and save), and re-check the table — values should be PBKDF2 hashes.
+**After the fix:** The `password` column now shows `pbkdf2_sha256$...` hashes.
 
 **Before – plaintext in `notes_member`**
 
@@ -100,12 +87,7 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 ![flaw-2-after-1](screenshots/flaw-2-after-1.png)
 
-**Before publishing the repo:** delete `db.sqlite3` so demo passwords are not pushed.
-
 ### FLAW 3 – Injection (SQL)
-
-**Code:** `notes/views.py` → `search_notes`  
-**Idea:** the search term is concatenated into a raw SQL string.
 
 1. Log in as **bob**. Open **Search**.
 2. In “Title contains” enter exactly:
@@ -116,20 +98,17 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 3. Click Search. The result list should include notes you should not see (e.g. alice’s private note), because the `WHERE` clause becomes always true.
 
-**After the fix:** switch to the commented parameterised query (or the ORM variant). The same payload should return **no rows** (or only titles that literally contain that string).
+**After the fix:** The same payload shows "No results."
 
 **Before – injection returns every note**
 
 ![flaw-3-before-1](screenshots/flaw-3-before-1.png)
 
-**After – same payload returns nothing useful**
+**After – same payload returns no results**
 
 ![flaw-3-after-1](screenshots/flaw-3-after-1.png)
 
 ### FLAW 4 – Identification and Authentication Failures
-
-**Code:** `notes/views.py` (`register`, `login_view`) and `config/settings.py` (session cookie)  
-**Idea:** weak passwords allowed, unlimited login tries, weak cookie flags.
 
 **A. Weak password on register**
 
@@ -144,10 +123,10 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 **C. Insecure session cookie**
 
 1. Log in successfully.
-2. DevTools → Application (or Storage) → Cookies → `http://127.0.0.1:8000`.
+2. DevTools → Application → Cookies → `http://127.0.0.1:8000`.
 3. The session cookie has **HttpOnly** unchecked / false (and Secure is off; lifetime is two weeks per settings).
 
-**After the fix:** uncomment `validate_password` on register, the cache-based lockout + `cycle_key()` on login, and the hardened `SESSION_COOKIE_*` lines in `settings.py`. Then: password `1` is rejected; after enough failures you see a lockout message (429); cookie shows HttpOnly.
+**After the fix:** password `1` is rejected; the 6th failed login returns **429** "Too many failed attempts. Try again in 5 minutes."; the `sessionid` cookie is HttpOnly, Secure, SameSite Strict, and expires with the session.
 
 **Before – password `1` accepted**
 
@@ -175,13 +154,10 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 
 ### FLAW 5 – Security Logging and Monitoring Failures
 
-**Code:** no `LOGGING` in `config/settings.py`; silent paths in `login_view`, `moderation`, and the FLAW 1 fixes  
-**Idea:** failed logins and denied access leave no audit trail.
+1. As **bob**, open `/note/1/`, `/note/1/edit/` and `/moderation/`; fail a few logins for `alice`.
+2. Look in the project folder: there is no `security.log`.
 
-1. Fail a few logins (wrong password) and/or open `/moderation/` as **bob** (non-moderator, 403).
-2. Look in the project folder: there is **no** `security.log`, and nothing useful is written for those events.
-
-**After the fix:** enable the commented `LOGGING` block and the `security_log.warning(...)` calls. Repeat the failed login / denied access steps. `security.log` should appear with lines for those events.
+**After the fix:** Repeat the failed login / denied access steps. `security.log` should appear with lines for those events.
 
 **Before – no `security.log`**
 
@@ -190,12 +166,3 @@ uv run python -c "import sqlite3; c=sqlite3.connect('db.sqlite3'); print(c.execu
 **After – `security.log` records events**
 
 ![flaw-5-after-1](screenshots/flaw-5-after-1.png)
-
-## Applying a fix for “after” demos
-
-1. Open the file listed for that flaw.
-2. Comment out the vulnerable lines if they would conflict.
-3. Uncomment the `# FIX (commented out):` block.
-4. Restart `uv run python manage.py runserver` (settings changes always need a restart).
-5. For FLAW 2, set passwords again after enabling hashing so old plaintext rows are updated.
-6. When done documenting, restore the commented-out style so the public repo stays “one version with flaws + fixes commented”, as the course asks.
